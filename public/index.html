@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pharos Yield</title>
+  <meta name="description" content="Compare three live USDC vaults, subtract gas, entry and exit, and prepare a move only if the holding period covers the cost." />
+  <style>
+    :root { --page: #f4f7f6; --ink: #1a2a24; --muted: #5b6e66; --teal: #0f6e62; --coral: #b23b2e; --mint: #0d7a56; --line: #dbe4e0; --paper: #fff; --on: #1a2a24; --on-ink: #fff; --btn-ink: #fff; color-scheme: light; }
+    html[data-theme="dark"] { --page: #101816; --ink: #eef6f2; --muted: #b4c4be; --teal: #7dcdc0; --coral: #ff8f7a; --mint: #7de7c4; --line: rgba(255,255,255,.16); --paper: #182420; --on: #eef6f2; --on-ink: #12201b; --btn-ink: #12201b; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { color: var(--ink); background: var(--page); font: 16px/1.45 system-ui, sans-serif; }
+    header, main { width: min(640px, calc(100% - 32px)); margin: 0 auto; }
+    header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 20px 0 0; }
+    .brand { color: inherit; text-decoration: none; letter-spacing: .14em; font-size: 13px; font-weight: 700; }
+    .brand b { color: var(--teal); }
+    .tools { margin-left: auto; display: flex; gap: 8px; }
+    .lang, .theme { display: flex; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); }
+    .lang button, .theme button { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; cursor: pointer; font: 700 12px system-ui, sans-serif; }
+    .lang button.on, .theme button.on { background: var(--on); color: var(--on-ink); }
+    main { padding: 20px 0 40px; }
+    .kicker { margin: 0 0 6px; letter-spacing: .14em; text-transform: uppercase; font-size: 12px; color: var(--teal); }
+    h1 { margin: 0; font-size: 32px; line-height: 1.1; font-weight: 700; }
+    .lead, .rules { color: var(--muted); }
+    .lead { margin: 8px 0 0; }
+    .rules { margin: 8px 0 0; }
+    .dock { margin-top: 20px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chips button, input, select, button { font: inherit; color: var(--ink); }
+    .chips button { border: 1px solid var(--line); background: var(--paper); color: var(--muted); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+    .chips button.on { color: var(--btn-ink); background: var(--teal); border-color: transparent; }
+    label { display: block; margin: 12px 0 4px; font-size: 12px; color: var(--muted); }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); }
+    .grid { display: grid; grid-template-columns: 1.1fr .7fr 1.2fr; gap: 8px; }
+    .row { display: flex; margin-top: 12px; }
+    .btn { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--teal); color: var(--btn-ink); font-weight: 700; cursor: pointer; }
+    .btn:disabled { opacity: .55; }
+    .status { margin: 12px 0 0; min-height: 0; color: var(--muted); }
+    .card { margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+    .card b { display: block; font-size: 13px; }
+    .card.stay b { color: var(--coral); }
+    .card.prepare b { color: var(--mint); }
+    .card p { margin: 4px 0 0; }
+    .detail { color: var(--muted); overflow-wrap: anywhere; }
+    .log-label { margin: 16px 0 0; font-size: 12px; color: var(--muted); }
+    .history, .vaults { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .check { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--paper); }
+    .check strong { display: block; }
+    .check span { grid-column: 1; color: var(--muted); }
+    .check em { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--muted); font-style: normal; font-weight: 700; }
+    .check.pick em { color: var(--mint); }
+    pre { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script>
+    try { if (localStorage.getItem("pharos-yield-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}
+  </script>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/"><b>PHAROS</b> YIELD</a>
+    <div class="tools">
+      <div class="theme"><button type="button" data-theme="light"></button><button type="button" data-theme="dark"></button></div>
+      <div class="lang"><button type="button" data-lang="en">EN</button><button type="button" data-lang="pt">PT</button></div>
+    </div>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="kicker" id="kicker"></p>
+      <h1 id="title"></h1>
+      <p class="lead" id="lead"></p>
+      <div class="rules" id="rules"></div>
+    </section>
+    <section class="dock">
+      <div class="chips" id="chips"></div>
+      <form id="form">
+        <div class="grid">
+          <div>
+            <label for="amount" id="amountL"></label>
+            <input id="amount" value="100" inputmode="decimal" />
+          </div>
+          <div>
+            <label for="days" id="daysL"></label>
+            <input id="days" value="7" inputmode="numeric" />
+          </div>
+          <div>
+            <label for="from" id="fromL"></label>
+            <select id="from">
+              <option value="idle"></option>
+              <option value="rock"></option>
+              <option value="sharp"></option>
+              <option value="prime"></option>
+            </select>
+          </div>
+        </div>
+        <div class="row"><button class="btn" id="go" type="submit"></button></div>
+      </form>
+      <p class="status" id="status"></p>
+      <div id="out"></div>
+      <p class="log-label" id="logLabel"></p>
+      <div class="history" id="history"></div>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

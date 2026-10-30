@@ -1,0 +1,10 @@
+{
+  "name": "pharos-yield",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/yield.test.js",
+    "web": "node scripts/dev-server.js",
+    "scan": "node tasks/scan/scan.js"
+  }
+}
