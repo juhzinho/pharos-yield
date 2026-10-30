@@ -128,7 +128,8 @@ function show(data) {
   if (data.pick) {
     const line = document.createElement("p");
     line.className = "detail";
-    line.textContent = `${text.pick}: ${data.pick.name}. ${text.gain} ${data.pick.gain} USDC. ${text.cost} ${data.pick.cost} USDC. ${text.gas} ${data.pick.gas} USDC.`;
+    const label = data.decision === "prepare" ? text.pick : text.stay;
+    line.textContent = `${label}: ${data.pick.name}. ${text.gain} ${data.pick.gain} USDC. ${text.cost} ${data.pick.cost} USDC. ${text.gas} ${data.pick.gas} USDC.`;
     box.append(line);
   }
   if (Array.isArray(data.sources) && data.sources.length) {
@@ -138,13 +139,18 @@ function show(data) {
     box.append(label);
     for (const row of data.sources) {
       const item = document.createElement("article");
-      item.className = ["check", data.pick && data.pick.id === row.id ? "pick" : ""].filter(Boolean).join(" ");
+      item.className = ["check", data.decision === "prepare" && data.pick && data.pick.id === row.id ? "pick" : ""].filter(Boolean).join(" ");
       const name = document.createElement("strong");
       name.textContent = `${row.name} · ${row.net}%`;
       const meta = document.createElement("span");
       meta.textContent = `${row.protocol} · ${text.entry} ${row.entry} · ${text.exit} ${row.exit}`;
       const flag = document.createElement("em");
-      flag.textContent = data.pick && data.pick.id === row.id ? text.pick : data.from === row.id ? text.stay : "";
+      flag.textContent =
+        data.decision === "prepare" && data.pick && data.pick.id === row.id
+          ? text.pick
+          : data.from === row.id
+            ? text.stay
+            : "";
       item.append(name, meta, flag);
       box.append(item);
     }

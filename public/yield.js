@@ -54,7 +54,7 @@ function formatUnits(value, decimals, places = decimals) {
 
 export function parseForm({ amount, days, from }) {
   const amount6 = parseUnits(amount, 6);
-  if (amount6 === null) return null;
+  if (amount6 === null || amount6 === 0n) return null;
   const rawDays = String(days ?? "").trim();
   if (!/^\d+$/.test(rawDays)) return null;
   const hold = Number(rawDays);
@@ -128,10 +128,14 @@ export function evaluate({ amount, days, from, sources, gasUsdc6, lang = "en" })
     return { ...base, decision: "stay", headline: t.headStay, reason: t.noGas };
   }
 
+  const higher = live.filter((dest) => dest.id !== current.id && dest.netApyWad > current.netApyWad);
+  if (!higher.length) {
+    return { ...base, decision: "stay", headline: t.headStay, reason: t.already };
+  }
+
   let best = null;
   let considered = 0;
-  for (const dest of live) {
-    if (dest.id === current.id) continue;
+  for (const dest of higher) {
     const gas = dest.gas6 ?? gasUsdc6;
     if (gas === null || gas === undefined) continue;
     considered += 1;
@@ -152,12 +156,8 @@ export function evaluate({ amount, days, from, sources, gasUsdc6, lang = "en" })
     if (!best || net > best.netRaw) best = card;
   }
 
-  if (considered === 0) {
+  if (considered === 0 || !best) {
     return { ...base, decision: "stay", headline: t.headStay, reason: t.noGas };
-  }
-
-  if (!best) {
-    return { ...base, decision: "stay", headline: t.headStay, reason: t.already };
   }
 
   if (best.netRaw <= 0n) {

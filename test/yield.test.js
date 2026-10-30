@@ -28,7 +28,7 @@ const three = [vault("rock", 6), vault("sharp", 5), vault("prime", 0)];
 test("the form rejects a bad amount, extra decimals, a zero, a bad day count and a bad vault", () => {
   assert.equal(parseForm({ amount: "10.12.3", days: "7", from: "idle" }), null);
   assert.equal(parseForm({ amount: "1.1234567", days: "7", from: "idle" }), null);
-  assert.equal(parseForm({ amount: "0", days: "7", from: "idle" }).amount6, 0n);
+  assert.equal(parseForm({ amount: "0", days: "7", from: "idle" }), null);
   assert.equal(parseForm({ amount: "100", days: "0", from: "idle" }), null);
   assert.equal(parseForm({ amount: "100", days: "366", from: "idle" }), null);
   assert.equal(parseForm({ amount: "100", days: "7", from: "harbor" }), null);
@@ -89,7 +89,10 @@ test("a net of zero stays put", () => {
 test("already sitting in the highest vault stays put after costs", () => {
   const out = evaluate({ amount: "100", days: "365", from: "rock", sources: three, gasUsdc6: 1n });
   assert.equal(out.decision, "stay");
-  assert.equal(out.pick.id, "sharp");
+  assert.equal(out.headline, "Stay put.");
+  assert.match(out.reason, /Already in the highest/);
+  assert.equal(out.pick, null);
+  assert.equal(out.txs, null);
 });
 
 test("entry and exit are taken from the source and the destination, not invented", () => {
