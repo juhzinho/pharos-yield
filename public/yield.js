@@ -1,4 +1,4 @@
-const FROM = ["idle", "rock", "sharp", "prime"];
+const FROM = ["idle", "rock", "sharp", "apc"];
 const WAD = 10n ** 18n;
 const DAYS_YEAR = 365n;
 
@@ -12,6 +12,8 @@ export const TEXT = {
     noGas: "A recent deposit or withdraw was not found, so gas was not measured.",
     fromUnread: "The vault you are in could not be read.",
     already: "Already in the highest net vault.",
+    closed: "A higher vault is not accepting deposits.",
+    locked: "This vault does not pay out in the same transaction.",
     skip: (net, cost, days) => `Net ${net} USDC over ${days} days is not above the cost of ${cost} USDC.`,
     go: (net, cost, days) => `Net ${net} USDC over ${days} days is above the cost of ${cost} USDC. The unsigned calls are ready. Nothing was broadcast.`,
     headStay: "Stay put.",
@@ -26,6 +28,8 @@ export const TEXT = {
     noGas: "Não há um depósito ou saque recente, então o gás não foi medido.",
     fromUnread: "O vault em que você está não pôde ser lido.",
     already: "Já está no vault de maior líquido.",
+    closed: "Um vault mais alto não está aceitando depósitos.",
+    locked: "Este vault não paga na mesma transação.",
     skip: (net, cost, days) => `O líquido de ${net} USDC em ${days} dias não está acima do custo de ${cost} USDC.`,
     go: (net, cost, days) => `O líquido de ${net} USDC em ${days} dias está acima do custo de ${cost} USDC. As chamadas sem assinatura estão prontas. Nada foi enviado.`,
     headStay: "Ficar onde está.",
@@ -110,6 +114,7 @@ export function evaluate({ amount, days, from, sources, gasUsdc6, lang = "en" })
     fee: pct(row.feeWad ?? 0n),
     entry: money(row.entry6),
     exit: money(row.exit6),
+    open: row.open !== false,
   }));
 
   const base = {
@@ -128,14 +133,22 @@ export function evaluate({ amount, days, from, sources, gasUsdc6, lang = "en" })
     return { ...base, decision: "stay", headline: t.headStay, reason: t.noGas };
   }
 
+  if (parsed.from !== "idle" && current.canExit === false) {
+    return { ...base, decision: "stay", headline: t.headStay, reason: t.locked };
+  }
+
   const higher = live.filter((dest) => dest.id !== current.id && dest.netApyWad > current.netApyWad);
   if (!higher.length) {
     return { ...base, decision: "stay", headline: t.headStay, reason: t.already };
   }
+  const openHigher = higher.filter((dest) => dest.open !== false);
+  if (!openHigher.length) {
+    return { ...base, decision: "stay", headline: t.headStay, reason: t.closed };
+  }
 
   let best = null;
   let considered = 0;
-  for (const dest of higher) {
+  for (const dest of openHigher) {
     const gas = dest.gas6 ?? gasUsdc6;
     if (gas === null || gas === undefined) continue;
     considered += 1;

@@ -8,7 +8,7 @@ const copy = {
     kicker: "Yield",
     title: "Stay put, or move.",
     lead: "Three USDC vaults are read on Pacific. The extra yield over your holding period has to cover gas, the exit of where you are, and the entry of where you would go. If it does not, the answer is stay put.",
-    sources: "RockawayX and SharpByte are Morpho vaults. Prime is TermMax. Each net rate comes from that vault, after its own fee.",
+    sources: "RockawayX and SharpByte are Morpho vaults. Axil Prime 3M is R25. Each net rate comes from that vault. The R25 rate is the seven-day change in the on-chain share price.",
     hold: "The days are the holding period. A higher rate is not enough on its own.",
     keys: "If a move is worth it, the calls stay unsigned. Nothing is broadcast.",
     amount: "USDC amount",
@@ -17,7 +17,8 @@ const copy = {
     idle: "Idle USDC",
     rock: "RockawayX USDC",
     sharp: "SharpByte USDC",
-    prime: "Pharos Prime",
+    apc: "Axil Prime 3M",
+    closed: "Closed",
     go: "Compare",
     reading: "Reading the vaults…",
     failed: "The vaults could not be read.",
@@ -39,7 +40,7 @@ const copy = {
     kicker: "Rendimento",
     title: "Ficar, ou mover.",
     lead: "Três vaults de USDC são lidos na Pacific. O rendimento extra no seu prazo tem que cobrir o gás, a saída de onde você está e a entrada de para onde iria. Se não cobrir, a resposta é ficar.",
-    sources: "RockawayX e SharpByte são vaults da Morpho. Prime é TermMax. Cada taxa líquida vem daquele vault, depois da taxa dele.",
+    sources: "RockawayX e SharpByte são vaults da Morpho. Axil Prime 3M é R25. Cada taxa líquida vem daquele vault. A taxa da R25 é a variação de sete dias do preço da cota on-chain.",
     hold: "Os dias são o prazo mínimo. Uma taxa maior sozinha não basta.",
     keys: "Se a troca valer, as chamadas ficam sem assinatura. Nada é enviado.",
     amount: "Quantidade em USDC",
@@ -48,7 +49,8 @@ const copy = {
     idle: "USDC parado",
     rock: "RockawayX USDC",
     sharp: "SharpByte USDC",
-    prime: "Pharos Prime",
+    apc: "Axil Prime 3M",
+    closed: "Fechado",
     go: "Comparar",
     reading: "Lendo os vaults…",
     failed: "Os vaults não puderam ser lidos.",
@@ -143,7 +145,7 @@ function show(data) {
       const name = document.createElement("strong");
       name.textContent = `${row.name} · ${row.net}%`;
       const meta = document.createElement("span");
-      meta.textContent = `${row.protocol} · ${text.entry} ${row.entry} · ${text.exit} ${row.exit}`;
+      meta.textContent = `${row.protocol} · ${text.entry} ${row.entry} · ${text.exit} ${row.exit}${row.open === false ? ` · ${text.closed}` : ""}`;
       const flag = document.createElement("em");
       flag.textContent =
         data.decision === "prepare" && data.pick && data.pick.id === row.id
@@ -199,7 +201,7 @@ function paint() {
   $("from").options[0].textContent = text.idle;
   $("from").options[1].textContent = text.rock;
   $("from").options[2].textContent = text.sharp;
-  $("from").options[3].textContent = text.prime;
+  $("from").options[3].textContent = text.apc;
   $("go").textContent = text.go;
   $("logLabel").textContent = text.history;
   document.documentElement.lang = lang;

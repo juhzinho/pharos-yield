@@ -23,7 +23,7 @@ function vault(id, net, extra = {}) {
   };
 }
 
-const three = [vault("rock", 6), vault("sharp", 5), vault("prime", 0)];
+const three = [vault("rock", 6), vault("sharp", 5), vault("apc", 0)];
 
 test("the form rejects a bad amount, extra decimals, a zero, a bad day count and a bad vault", () => {
   assert.equal(parseForm({ amount: "10.12.3", days: "7", from: "idle" }), null);
@@ -99,7 +99,7 @@ test("entry and exit are taken from the source and the destination, not invented
   const sources = [
     vault("rock", 6, { exit: 150000n }),
     vault("sharp", 8, { entry: 200000n }),
-    vault("prime", 0),
+    vault("apc", 0),
   ];
   const out = evaluate({ amount: "1000", days: "365", from: "rock", sources, gasUsdc6: 10000n });
   assert.equal(out.decision, "prepare");
@@ -113,6 +113,34 @@ test("the Portuguese stay line names the net and the cost", () => {
   const out = evaluate({ amount: "100", days: "1", from: "idle", sources: three, gasUsdc6: 1_000000n, lang: "pt" });
   assert.equal(out.headline, "Ficar onde está.");
   assert.match(out.reason, /não está acima do custo/);
+});
+
+test("a closed higher vault is listed but not picked", () => {
+  const closed = { ...vault("apc", 12), open: false };
+  const out = evaluate({
+    amount: "100",
+    days: "365",
+    from: "idle",
+    sources: [vault("rock", 6), vault("sharp", 8), closed],
+    gasUsdc6: 100000n,
+  });
+  assert.equal(out.decision, "prepare");
+  assert.equal(out.pick.id, "sharp");
+  assert.equal(out.sources.find((row) => row.id === "apc").open, false);
+});
+
+test("a vault that cannot pay out in the same transaction stays put", () => {
+  const locked = { ...vault("apc", 12), canExit: false };
+  const out = evaluate({
+    amount: "100",
+    days: "365",
+    from: "apc",
+    sources: [vault("rock", 6), vault("sharp", 14), locked],
+    gasUsdc6: 100000n,
+  });
+  assert.equal(out.decision, "stay");
+  assert.match(out.reason, /does not pay out in the same transaction/);
+  assert.equal(out.txs, null);
 });
 
 test("the unsigned calls encode withdraw, approve and deposit without a broadcast flag", () => {
